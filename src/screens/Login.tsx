@@ -11,9 +11,16 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  Linking,
 } from 'react-native';
 
+import {WebView} from 'react-native-webview';
+import {useNavigation} from '@react-navigation/native';
+
+import {AuthConfiguration, authorize} from 'react-native-app-auth';
+
 import google from '../assets/google.png';
+import microsoft from '../assets/microsoft.png';
 import axios from 'axios';
 
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -39,7 +46,7 @@ const Login = ({navigation}: LoginProps) => {
       Alert.alert('Login Successful', 'You have successfully logged in.', [
         {
           text: 'OK',
-          onPress: () => navigation.navigate('Details', {userDetails: email}),
+          onPress: () => navigation.navigate('Details', {token: email}),
         },
       ]);
     } catch (error) {
@@ -65,7 +72,7 @@ const Login = ({navigation}: LoginProps) => {
         {
           text: 'OK',
           onPress: () =>
-            navigation.navigate('Details', {userDetails: userInfo.user.email}),
+            navigation.navigate('Details', {token: userInfo.user.email}),
         },
       ]);
     } catch (error: any) {
@@ -84,6 +91,54 @@ const Login = ({navigation}: LoginProps) => {
         console.error(error);
       }
     }
+  };
+
+  const config: AuthConfiguration = {
+    issuer: 'https://identity-dev.abbord.com/login',
+    clientId: '0620cdd5-97ff-41de-9b0c-04dd931f4e1f', // Replace with your Microsoft client id
+    redirectUrl: 'com.myapp://oauth/auth/', // Replace with your redirect URI added in Microsoft portal
+    scopes: ['openid', 'profile', 'email'],
+    serviceConfiguration: {
+      authorizationEndpoint:
+        'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+      tokenEndpoint:
+        'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+      revocationEndpoint:
+        'https://login.microsoftonline.com/common/oauth2/v2.0/logout',
+    },
+    useNonce: true,
+    usePKCE: true, // For iOS, we have added the useNonce and usePKCE parameters, which are recommended for security reasons.
+    additionalParameters: {
+      prompt: 'consent',
+    },
+  };
+
+  interface AuthorizeResponse {
+    idToken: string;
+  }
+
+  const microsoftSignIn = async (): Promise<void> => {
+    try {
+      const response: AuthorizeResponse = await authorize(config);
+      console.log(response.idToken); // Here you get the idToken if login is successful.
+      Alert.alert('Login Successful', 'You have successfully logged in.', [
+        {
+          text: 'OK',
+          onPress: () =>
+            navigation.navigate('Details', {token: 'Microsoft User'}),
+        },
+      ]);
+    } catch (error) {
+      console.error('Login error:', error);
+    }
+  };
+
+  const openLink = () => {
+    const redirectBackUrl = btoa('myapp://redirect');
+
+    Linking.openURL(
+      `https://identity-dev.abbord.com/login?redirect=${redirectBackUrl}&applicationid=6673ff6a50eebd3f41eae061`,
+    );
   };
 
   return (
@@ -123,6 +178,15 @@ const Login = ({navigation}: LoginProps) => {
       <TouchableOpacity style={styles.googleButton} onPress={googleLogin}>
         <Image source={google} style={styles.socialIcon} />
         <Text style={styles.googleButtonText}>Sign in with Google</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.googleButton} onPress={microsoftSignIn}>
+        <Image source={microsoft} style={styles.socialIcon} />
+        <Text style={styles.googleButtonText}>Sign in with Microsoft</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.googleButton} onPress={openLink}>
+        <Text style={styles.googleButtonText}>Sign in with Tritv</Text>
       </TouchableOpacity>
     </View>
   );
@@ -199,6 +263,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     marginTop: 5,
+    marginBottom: 5,
   },
   googleButtonText: {
     color: '#000',

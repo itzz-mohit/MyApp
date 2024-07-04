@@ -7,10 +7,10 @@ import {RootStackParamList} from '../App';
 type DetailsProps = NativeStackScreenProps<RootStackParamList, 'Details'>;
 
 const Details = ({route}: DetailsProps) => {
-  const {userDetails} = route.params;
+  const {token} = route.params;
   return (
     <View style={styles.container}>
-      <Text>Details : {userDetails}</Text>
+      <Text>Details : {token}</Text>
     </View>
   );
 };
